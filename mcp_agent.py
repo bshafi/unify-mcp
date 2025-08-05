@@ -30,18 +30,20 @@ async def main():
             mcp_servers=[
                 server
             ],
-            output_type=bool # Returns a whether a task was assigned
+            # output_type=bool # Returns a whether a task was assigned
         )
-        try:
-            result = await Runner.run(trello_agent, "John, make copies of the report and put it on my desk.")
-            print(result.final_output)
-        except InputGuardrailTripwireTriggered as e:
-            print("Guardrail blocked this input:", e)
-        try:
-            result = await Runner.run(trello_agent, "John, how was your day.")
-            print(result.final_output)
-        except InputGuardrailTripwireTriggered as e:
-            print("Guardrail blocked this input:", e)
 
+        queries = [
+            "John, make copies of the report and put it on my desk.",
+            "John, how was your day."
+        ]
+
+        for query in queries:
+            try:
+                result = await Runner.run(trello_agent, query)
+                print('QUERY:', query)
+                print('AGENT:', result.final_output)
+            except InputGuardrailTripwireTriggered as e:
+                print("Guardrail blocked this input:", e)
 if __name__ == "__main__":
     asyncio.run(main())
