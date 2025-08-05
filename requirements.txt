@@ -1,0 +1,5 @@
+openai-agents
+discord
+python-dotenv
+requests
+fastmcp
