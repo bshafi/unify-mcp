@@ -28,8 +28,10 @@ async def main(message):
             model=model_name,
             name="Trello Agent",
             instructions=(
-                "The following text is part of a conversation between coworkers."
-                "IF there are any mention of a task, verify the structure of the Trello board and update it accordingly."
+                "The following text is part of a conversation between coworkers,"
+                "Your job is to manage tasks in Trello based on the conversation"
+                "IF there is any mention of a task, look for it and update the board accordingly."
+                "IF necessary, create a card in the appropriate list."
                 "Do nothing else if the text is not relevant or if an operation fails in any way."
             ),
             mcp_servers=[

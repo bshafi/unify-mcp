@@ -39,21 +39,20 @@ async def move_card(card_name: str, new_list_name: str):
 
     return await trello_api.update_card_list(card_to_move["id"], target_list["id"])
 
-
 @mcp.tool
-async def get_trello_structure() -> str:
+async def get_board_structure() -> str:
     """
-    Returns the current structure of the Trello board.
+    Returns all lists and cards in the Trello board.
     """
     lists = await trello_api.get_lists(trello_api.BOARD_ID)
     cards = await trello_api.get_cards(trello_api.BOARD_ID)
 
     structure = "Trello Board Structure:\n"
     for lst in lists:
-        structure += f"List: {lst['name']}\n"
+        structure += f"Cards in list \"{lst['name']}\":\n"
         for card in cards:
             if card["idList"] == lst["id"]:
-                structure += f"  - Card: {card['name']}\n"
+                structure += f"- {card['name']}\n"
     return structure
 
 
