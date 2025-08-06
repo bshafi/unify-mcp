@@ -30,7 +30,8 @@ def run_discord_bot(handle_message):
                 await self.close()
 
         async def on_message(self, message):
-            await handle_message(message)
+            if message.channel.id == int(os.environ['GENERAL_CHANNEL_ID']):
+                await handle_message(message)
 
     TOKEN = os.environ['DISCORD_TOKEN']
     client = MyClient(intents=intents)
