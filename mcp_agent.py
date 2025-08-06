@@ -1,4 +1,4 @@
-from agents import Agent, Runner, add_trace_processor, TracingProcessor, Trace
+from agents import Agent, Runner
 from agents.mcp.server import MCPServerStdio
 from agents.extensions.handoff_prompt import prompt_with_handoff_instructions
 import dotenv
@@ -27,13 +27,15 @@ async def main(message):
         trello_agent = Agent(
             model=model_name,
             name="Trello Agent",
-            instructions=prompt_with_handoff_instructions(
+            instructions=(
                 "The following text is part of a conversation between coworkers."
-                "IF there are any mention of a task, verify the structure of the Trello board and update it accordingly."
+                "IF the message is imperative or a task, get the board contents and use any tools needed to update the board."
+                "IF it doesn't exist, create it in the relevant list."
                 "IF a person is mentioned use the assignment_agent to assign the task on the Trello board."
-                "IF a person is taken off of a job, verify the structure of the card and remove that person from the job. Only remove one person at a time."
-                "IF you can't find a task on the board create it before updating."
+                "IF a person is taken off of a job, verify the structure of the card and remove that person from the job. "
                 "Do nothing else if the text is not relevant or if an operation fails in any way."
+                "After a successful tool call, your final response MUST be ONLY the raw string output from the tool (e.g., 'card_created')."
+                "OTHERWISE respond 'Not relevant'."
             ),
             mcp_servers=[
                 server
@@ -46,6 +48,15 @@ async def main(message):
             result = await Runner.run(trello_agent, query)
             print('QUERY:', query)
             print('AGENT:', result.final_output)
+
+            # React with an emoji based on the successful action
+            if result.final_output == "card_created":
+                await message.add_reaction("📌")
+            elif result.final_output == "card_moved":
+                await message.add_reaction("➡️")
+            elif result.final_output in ["checklist_updated", "checklist_item_updated"]:
+                await message.add_reaction("✅")
+
         except InputGuardrailTripwireTriggered as e:
             print("Guardrail blocked this input:", e)
 

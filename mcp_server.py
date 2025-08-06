@@ -1,5 +1,5 @@
 from fastmcp import FastMCP
-from typing import Optional
+from typing import Optional, List
 
 import trello_api
 
@@ -9,23 +9,27 @@ mcp = FastMCP("Unify-MCP")
 @mcp.tool
 async def create_card(list_name: str, card_name: str, description: str):
     """
-    Create card for a task in the specified list with a description of what the task entails.
+    Creates a card in the a list with a description.
     """
     lists = await trello_api.get_lists(trello_api.BOARD_ID)
     target_list = next((l for l in lists if l["name"] == list_name), None)
     if not target_list:
         return f"List '{list_name}' not found."
 
-    return await trello_api.create_card_in_list(
+    result = await trello_api.create_card_in_list(
         target_list["id"], card_name, description
     )
 
+    if isinstance(result, dict):
+        return "card_created"
+
+    return result
+
 
 @mcp.tool
-async def move_card(card_name: str, new_list_name: str):
+async def move_card(card_name: str, list_name: str):
     """
-    Whenever a task is updated, the card is moved to a different list.
-    Moves a Trello card with the given `card_name` to the `new_list_name`.
+    Moves a card to another list.
     """
     cards = await trello_api.get_cards(trello_api.BOARD_ID)
     card_to_move = next((c for c in cards if c["name"] == card_name), None)
@@ -33,27 +37,120 @@ async def move_card(card_name: str, new_list_name: str):
         return f"Card '{card_name}' not found."
 
     lists = await trello_api.get_lists(trello_api.BOARD_ID)
-    target_list = next((l for l in lists if l["name"] == new_list_name), None)
+    target_list = next((l for l in lists if l["name"] == list_name), None)
     if not target_list:
-        return f"List '{new_list_name}' not found."
+        return f"List '{list_name}' not found."
 
-    return await trello_api.update_card_list(card_to_move["id"], target_list["id"])
+    result = await trello_api.update_card_list(card_to_move["id"], target_list["id"])
+
+    if isinstance(result, dict):
+        return "card_moved"
+
+    return f"Failed to move card '{card_name}' to list '{list_name}'."
 
 
 @mcp.tool
-async def get_trello_structure() -> str:
+async def manage_checklist(card_name: str, checklist_name: str, items: List[str]):
     """
-    Returns the current structure of the Trello board.
+    Adds a checklist to a card.
+    If the checklist already exists, it adds the specified items to it.
+    If it doesn't exist, it creates the checklist first and then adds the items.
+    """
+    cards = await trello_api.get_cards(trello_api.BOARD_ID)
+    target_card = next((c for c in cards if c["name"] == card_name), None)
+    if not target_card:
+        return f"Card '{card_name}' not found."
+
+    card_id = target_card['id']
+    checklists = await trello_api.get_checklists_on_card(card_id)
+    target_checklist = next((cl for cl in checklists if cl['name'] == checklist_name), None)
+
+    if not target_checklist:
+        target_checklist = await trello_api.create_checklist(card_id, checklist_name)
+        if not isinstance(target_checklist, dict):
+            return f"Failed to create checklist '{checklist_name}': {target_checklist}"
+    
+    checklist_id = target_checklist['id']
+
+    for item_name in items:
+        result = await trello_api.create_check_item(checklist_id, item_name)
+        if not isinstance(result, dict):
+            return f"Failed to add item '{item_name}' to checklist '{checklist_name}'."
+    
+    return "checklist_updated"
+
+
+@mcp.tool
+async def complete_checklist_item(card_name: str, item_name: str, completed: bool = True):
+    """
+    Marks a task in a checklist as complete or incomplete.
+    """
+    cards = await trello_api.get_cards(trello_api.BOARD_ID)
+    target_card = next((c for c in cards if c["name"] == card_name), None)
+    if not target_card:
+        return f"Card '{card_name}' not found."
+    card_id = target_card['id']
+
+    checklists = await trello_api.get_checklists_on_card(card_id)
+    if not checklists:
+        return f"No checklists found on card '{card_name}'."
+    
+    target_item = None
+    for cl in checklists:
+        # checkItems key should exist because we requested it in the API call
+        for item in cl.get('checkItems', []):
+            if item['name'] == item_name:
+                target_item = item
+                break
+        if target_item:
+            break
+    
+    if not target_item:
+        return f"Checklist item '{item_name}' not found on card '{card_name}'."
+    
+    result = await trello_api.update_check_item_state(card_id, target_item['id'], completed)
+
+    if isinstance(result, dict):
+        return "checklist_item_updated"
+    
+    return f"Failed to update item '{item_name}': {result}"
+
+@mcp.tool
+async def set_card_description(card_name: str, description: str):
+    """
+    Sets or updates the description for an existing card.
+    """
+    cards = await trello_api.get_cards(trello_api.BOARD_ID)
+    card_to_update = next((c for c in cards if c["name"] == card_name), None)
+    if not card_to_update:
+        return f"Card '{card_name}' not found."
+
+    result = await trello_api.update_card_description(card_to_update["id"], description)
+    
+    if isinstance(result, dict):
+        return "card_description_updated"
+
+    return f"Failed to update description for card '{card_name}'."
+
+@mcp.tool
+async def get_board_contents() -> str:
+    """
+    Returns all Lists and Cards/Tasks in the Trello board.
     """
     lists = await trello_api.get_lists(trello_api.BOARD_ID)
     cards = await trello_api.get_cards(trello_api.BOARD_ID)
 
     structure = "Trello Board Structure:\n"
     for lst in lists:
-        structure += f"List: {lst['name']}\n"
+        structure += f"Cards in list \"{lst['name']}\":\n"
         for card in cards:
             if card["idList"] == lst["id"]:
-                structure += f"  - Card: {card['name']}\n"
+                structure += f"- {card['name']}\n"
+                for checklist in await trello_api.get_checklists_on_card(card["id"]):
+                    structure += f"  - Checklist: {checklist['name']}\n"
+                    for item in checklist.get('checkItems', []):
+                        status = "✅" if item['state'] == 'complete' else "❌"
+                        structure += f"    - {status} {item['name']}\n"
     return structure
 
 @mcp.tool
