@@ -62,3 +62,42 @@ def create_card_in_list(list_id, name, description=None):
     if response.ok:
         return response.json()
     return response.content
+
+def get_cards(board_id):
+    "Retrieves a list of all cards in a board"
+    url = f"https://api.trello.com/1/boards/{board_id}/cards"
+    headers = {
+       "Accept": "application/json"
+    }
+    query = {**KEY_TOKEN}
+    response = requests.request(
+        "GET",
+        url,
+        headers=headers,
+        params=query,
+        timeout=1000
+    )
+    if response.ok:
+        return response.json()
+    return []
+
+def update_card_list(card_id, list_id):
+    "Moves a card to a different list"
+    url = f"https://api.trello.com/1/cards/{card_id}"
+    headers = {
+        "Accept": "application/json"
+    }
+    query = {
+        'idList': list_id,
+        **KEY_TOKEN
+    }
+    response = requests.request(
+        "PUT",
+        url,
+        headers=headers,
+        params=query,
+        timeout=1000
+    )
+    if response.ok:
+        return response.json()
+    return None

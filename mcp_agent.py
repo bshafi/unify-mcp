@@ -1,4 +1,4 @@
-from agents import Agent, Runner
+from agents import Agent, Runner, add_trace_processor, TracingProcessor, Trace
 from agents.mcp.server import MCPServerStdio
 
 import dotenv
@@ -13,9 +13,9 @@ from agents.exceptions import InputGuardrailTripwireTriggered
 from pydantic import BaseModel
 import asyncio
 
-
 async def main():
-    "Uses the MCP Server to create cards in trello"
+    "Uses the MCP Server to manage cards for all tasks in Trello"
+
     async with MCPServerStdio(
         params={
             "command": "python",
@@ -26,16 +26,19 @@ async def main():
         trello_agent = Agent(
             model=model_name,
             name="Trello Agent",
-            instructions="If a task was assigned use MCP and create a trello card with a name for the task and a description. The following text is part of a conversation between coworkers. ",
+            instructions=(
+            "The following text is part of a conversation between coworkers."
+            "IF there are any mention of a task, verify the structure of the Trello board and update it accordingly."
+            "Do nothing else if the text is not relevant or if an operation fails in any way."
+            ),
             mcp_servers=[
-                server
+            server
             ],
             # output_type=bool # Returns a whether a task was assigned
         )
 
         queries = [
-            "John, make copies of the report and put it on my desk.",
-            "John, how was your day."
+            "Boss. I have finished the ice cream task!!",
         ]
 
         for query in queries:
