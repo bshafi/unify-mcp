@@ -1,11 +1,9 @@
-# This code sample uses the 'requests' library:
-# http://docs.python-requests.org
-import requests
+import httpx
 import json
 import dotenv
+import os
 
 dotenv.load_dotenv()
-import os
 
 KEY_TOKEN = {
     'key': os.environ['TRELLO_API_KEY'],
@@ -14,37 +12,28 @@ KEY_TOKEN = {
 
 BOARD_ID = os.environ['TRELLO_BOARD_ID']
 
-def get_lists(board_id):
-    "Retrieves a list of all lists in a board"
+# Use a single client for all requests to improve performance
+client = httpx.AsyncClient(timeout=30.0) # Set a reasonable timeout
+
+async def get_lists(board_id):
+    """Retrieves a list of all lists in a board"""
     url = f"https://api.trello.com/1/boards/{board_id}/lists"
+    headers = {"Accept": "application/json"}
+    query = {**KEY_TOKEN}
 
-    headers = {
-    "Accept": "application/json"
-    }
-
-    query = { **KEY_TOKEN }
-
-    response = requests.request(
-        "GET",
-        url,
-        headers=headers,
-        params=query,
-        timeout=1000
-    )
+    response = await client.get(url, headers=headers, params=query)
 
     try:
+        response.raise_for_status()  # Raise an exception for bad status codes (4xx or 5xx)
         return response.json()
-    except Exception: # pylint: disable=W0718
-        return response.content
+    except (httpx.HTTPStatusError, json.JSONDecodeError) as e:
+        print(f"Error getting lists: {e}")
+        return response.text
 
-def create_card_in_list(list_id, name, description=None):
-    "Creates a card in a list"
+async def create_card_in_list(list_id, name, description=None):
+    """Creates a card in a list"""
     url = "https://api.trello.com/1/cards"
-
-    headers = {
-        "Accept": "application/json"
-    }
-
+    headers = {"Accept": "application/json"}
     query = {
         'name': name,
         'idList': list_id,
@@ -52,52 +41,45 @@ def create_card_in_list(list_id, name, description=None):
         **KEY_TOKEN
     }
 
-    response = requests.request(
-        "POST",
-        url,
-        headers=headers,
-        params=query,
-        timeout=1000
-    )
-    if response.ok:
+    response = await client.post(url, headers=headers, params=query)
+    
+    try:
+        response.raise_for_status()
         return response.json()
-    return response.content
+    except (httpx.HTTPStatusError, json.JSONDecodeError) as e:
+        print(f"Error creating card: {e}")
+        return response.text
 
-def get_cards(board_id):
-    "Retrieves a list of all cards in a board"
+
+async def get_cards(board_id):
+    """Retrieves a list of all cards in a board"""
     url = f"https://api.trello.com/1/boards/{board_id}/cards"
-    headers = {
-       "Accept": "application/json"
-    }
+    headers = {"Accept": "application/json"}
     query = {**KEY_TOKEN}
-    response = requests.request(
-        "GET",
-        url,
-        headers=headers,
-        params=query,
-        timeout=1000
-    )
-    if response.ok:
-        return response.json()
-    return []
+    
+    response = await client.get(url, headers=headers, params=query)
 
-def update_card_list(card_id, list_id):
-    "Moves a card to a different list"
+    try:
+        response.raise_for_status()
+        return response.json()
+    except (httpx.HTTPStatusError, json.JSONDecodeError):
+         # If it fails or is empty, return an empty list
+        return []
+
+async def update_card_list(card_id, list_id):
+    """Moves a card to a different list"""
     url = f"https://api.trello.com/1/cards/{card_id}"
-    headers = {
-        "Accept": "application/json"
-    }
+    headers = {"Accept": "application/json"}
     query = {
         'idList': list_id,
         **KEY_TOKEN
     }
-    response = requests.request(
-        "PUT",
-        url,
-        headers=headers,
-        params=query,
-        timeout=1000
-    )
-    if response.ok:
+    
+    response = await client.put(url, headers=headers, params=query)
+
+    try:
+        response.raise_for_status()
         return response.json()
-    return None
+    except (httpx.HTTPStatusError, json.JSONDecodeError) as e:
+        print(f"Error updating card list: {e}")
+        return None
