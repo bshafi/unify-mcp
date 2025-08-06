@@ -1,6 +1,5 @@
-from agents import Agent, Runner, add_trace_processor, TracingProcessor, Trace
+from agents import Agent, Runner
 from agents.mcp.server import MCPServerStdio
-
 import dotenv
 dotenv.load_dotenv()
 
@@ -28,11 +27,11 @@ async def main(message):
             model=model_name,
             name="Trello Agent",
             instructions=(
-                "The following text is part of a conversation between coworkers,"
-                "Your job is to manage tasks in Trello based on the conversation"
-                "IF there is any mention of a task, look for it and update the board accordingly."
-                "IF necessary, create a card in the appropriate list."
-                "Do nothing else if the text is not relevant or if an operation fails in any way."
+                "The following text is part of a chat between coworkers, manage the Trello board based on it's context"
+                "IF the message is imperative or a task, get the board contents and use any tools needed to update the board."
+                "IF it doesn't exist, create it in the relevant list."
+                "After a successful tool call, your final response MUST be ONLY the raw string output from the tool (e.g., 'card_created')."
+                "OTHERWISE respond 'Not relevant'."
             ),
             mcp_servers=[
                 server
@@ -45,6 +44,15 @@ async def main(message):
             result = await Runner.run(trello_agent, query)
             print('QUERY:', query)
             print('AGENT:', result.final_output)
+
+            # React with an emoji based on the successful action
+            if result.final_output == "card_created":
+                await message.add_reaction("📌")
+            elif result.final_output == "card_moved":
+                await message.add_reaction("➡️")
+            elif result.final_output in ["checklist_updated", "checklist_item_updated"]:
+                await message.add_reaction("✅")
+
         except InputGuardrailTripwireTriggered as e:
             print("Guardrail blocked this input:", e)
 
