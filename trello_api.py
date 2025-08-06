@@ -83,3 +83,69 @@ async def update_card_list(card_id, list_id):
     except (httpx.HTTPStatusError, json.JSONDecodeError) as e:
         print(f"Error updating card list: {e}")
         return None
+    
+async def get_members(board_id):
+    url = f"https://api.trello.com/1/boards/{board_id}/members"
+
+    headers = {"Accept": "application/json"}
+    query = {
+        **KEY_TOKEN
+    }
+    response = await client.get(url, headers=headers, params=query)
+
+    try:
+        response.raise_for_status()
+        return response.json()
+    except (httpx.HTTPStatusError, json.JSONDecodeError):
+         # If it fails or is empty, return an empty list
+        return []
+
+async def get_card_members(card_id):
+    url = f"https://api.trello.com/1/cards/{card_id}/members"
+    query = {
+        **KEY_TOKEN
+    }
+    response = await client.get(url, params=query)
+
+    try:
+        response.raise_for_status()
+        return response.json()
+    except (httpx.HTTPStatusError, json.JSONDecodeError):
+         # If it fails or is empty, return an empty list
+        return []
+    
+    
+async def assign_card(card_id, member_id):
+    url = f"https://api.trello.com/1/cards/{card_id}/idMembers"
+    query = {
+        'value': member_id,
+        **KEY_TOKEN
+    }
+
+    response = await client.post(
+        url,
+        params=query
+    )
+
+    try:
+        response.raise_for_status()
+        return response.json()
+    except (httpx.HTTPStatusError, json.JSONDecodeError) as e:
+        print(f"Error assigning task: {e}")
+        return None
+
+async def remove_card_assignment(card_id, member_id):
+    
+    url = f"https://api.trello.com/1/cards/{card_id}/idMembers/{member_id}"
+    
+    params = {
+        **KEY_TOKEN
+    }
+
+    response = await client.delete(url, params=params)
+    try:
+        response.raise_for_status()
+        return response.json()
+    except (httpx.HTTPStatusError, json.JSONDecodeError) as e:
+        print(f"Error assigning task: {e}")
+        return None

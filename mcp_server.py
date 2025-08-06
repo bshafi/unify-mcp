@@ -56,6 +56,57 @@ async def get_trello_structure() -> str:
                 structure += f"  - Card: {card['name']}\n"
     return structure
 
+@mcp.tool
+async def asign_card(card_name: str, person_name: str):
+    """
+    Updates a trello card and assigns a specific person to the card
+    `card_name` is the name of the card
+    `person_name` is the name of the person
+    """
+    
+    cards = await trello_api.get_cards(trello_api.BOARD_ID)
+    card_id = next((c for c in cards if c["name"] == card_name), None)['id']
+    if not card_id:
+        return f"Card '{card_name}' not found."
+    members = await trello_api.get_members(trello_api.BOARD_ID)
+
+    member_id = next((c for c in members if person_name.lower() in c["fullName"].lower() or person_name.lower() in c['username']), None)
+    member_id = member_id['id']
+    if not member_id:
+        return f"Card '{person_name}' not found."
+
+    return await trello_api.assign_card(card_id, member_id)
+
+@mcp.tool
+async def remove_person_from_card(card_name: str, person_name: str):
+    """
+    Removes a person assigned to a specific card.
+    
+    """
+    cards = await trello_api.get_cards(trello_api.BOARD_ID)
+    card_id = next((c for c in cards if c["name"] == card_name), None)['id']
+    if not card_id:
+        return f"Card '{card_name}' not found."
+    members = await trello_api.get_members(trello_api.BOARD_ID)
+
+    member_id = next((c for c in members if person_name.lower() in c["fullName"].lower() or person_name.lower() in c['username']), None)
+    member_id = member_id['id']
+    if not member_id:
+        return f"Card '{person_name}' not found."
+
+    return await trello_api.remove_card_assignment(card_id, member_id)
+
+@mcp.tool
+async def get_card_structure(card_name: str):
+    """
+    Retrives details about a card. Use this whenever you're modifying a card
+    """
+    cards = await trello_api.get_cards(trello_api.BOARD_ID)
+    card_id = next((c for c in cards if c["name"] == card_name), None)['id']
+    if not card_id:
+        return f"Card '{card_name}' not found."
+    
+    return await trello_api.get_card_members(card_id)
 
 if __name__ == "__main__":
     mcp.run()
