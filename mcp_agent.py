@@ -13,7 +13,8 @@ from agents.exceptions import InputGuardrailTripwireTriggered
 from pydantic import BaseModel
 import asyncio
 
-async def main():
+
+async def main(message):
     "Uses the MCP Server to manage cards for all tasks in Trello"
 
     async with MCPServerStdio(
@@ -27,26 +28,25 @@ async def main():
             model=model_name,
             name="Trello Agent",
             instructions=(
-            "The following text is part of a conversation between coworkers."
-            "IF there are any mention of a task, verify the structure of the Trello board and update it accordingly."
-            "Do nothing else if the text is not relevant or if an operation fails in any way."
+                "The following text is part of a conversation between coworkers."
+                "IF there are any mention of a task, verify the structure of the Trello board and update it accordingly."
+                "Do nothing else if the text is not relevant or if an operation fails in any way."
             ),
             mcp_servers=[
-            server
+                server
             ],
             # output_type=bool # Returns a whether a task was assigned
         )
 
-        queries = [
-            "Boss. I have finished the ice cream task!!",
-        ]
+        query = message.content
+        try:
+            result = await Runner.run(trello_agent, query)
+            print('QUERY:', query)
+            print('AGENT:', result.final_output)
+        except InputGuardrailTripwireTriggered as e:
+            print("Guardrail blocked this input:", e)
 
-        for query in queries:
-            try:
-                result = await Runner.run(trello_agent, query)
-                print('QUERY:', query)
-                print('AGENT:', result.final_output)
-            except InputGuardrailTripwireTriggered as e:
-                print("Guardrail blocked this input:", e)
 if __name__ == "__main__":
-    asyncio.run(main())
+    import discord_background
+    
+    discord_background.run_discord_bot(main)
