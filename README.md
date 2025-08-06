@@ -7,8 +7,8 @@ Agent Capabilities
     - [ ] When a user assigns a task to another person, that person is assigned in trello card
     - [ ] When a user discusses a task, any additional details are added to the task's description or checklist
  - [ ] Research Topics
-    - [ ] Go through the history of a trello board, finding and storing common workflows/checklists
-    - [ ] Reuse previous workflows/checklists instead of creating new ones
+    - [ ] Go through the history of a trello board, finding and storing common checklists
+    - [ ] Reuse previous checklists instead of creating new ones
  - [ ] Documentation (Google Docs)
     - [ ] Update documentation & trello with new information (Asks user permission first)
     - [ ] When a card is created add relavent links to documentation
