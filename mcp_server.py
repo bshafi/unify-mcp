@@ -7,18 +7,16 @@ mcp = FastMCP("Unify-MCP")
 
 
 @mcp.tool
-async def create_card(name: str, description: str):
+async def create_card(list_name: str, card_name: str, description: str):
     """
-    Whenever a person is asked to do a task a card is created with
-    a name for the task and a description of what the task entails.
-
-    Create card with the provided `name` and description
+    Create card for a task in the specified list with a description of what the task entails.
     """
-
     lists = trello_api.get_lists(trello_api.BOARD_ID)
-    list_id = lists[0]["id"]
+    target_list = next((l for l in lists if l["name"] == list_name), None)
+    if not target_list:
+        return f"List '{list_name}' not found."
 
-    trello_api.create_card_in_list(list_id, name, description)
+    return trello_api.create_card_in_list(target_list["id"], card_name, description)
 
 
 @mcp.tool
@@ -38,6 +36,7 @@ async def move_card(card_name: str, new_list_name: str):
         return f"List '{new_list_name}' not found."
 
     return trello_api.update_card_list(card_to_move["id"], target_list["id"])
+
 
 @mcp.tool
 async def get_trello_structure() -> str:
