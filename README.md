@@ -12,7 +12,11 @@ Agent Capabilities
  - [ ] Documentation (Google Docs)
     - [ ] Update documentation & trello with new information (Asks user permission first)
     - [ ] When a card is created add relavent links to documentation
-References:
+
+### References:
+
 https://openai.github.io/openai-agents-python/
+
 https://developer.atlassian.com/cloud/trello/rest/api-group-actions/#api-group-actions
+
 https://gofastmcp.com/
