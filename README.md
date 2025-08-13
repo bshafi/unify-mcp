@@ -3,7 +3,7 @@
 Turn discussion into action.
 
 How much valuable information is buried in your Slack history?
-Is your documentation actually reflecting the latest decisions, or is it falling behind?
+Is your documentation up to date with the latest decisions?
 
 This AI assistant listens to your team’s conversations, identifies tasks and key ideas, and automatically updates your documentation and project management tools so nothing gets lost. Say goodbye to manual updates and missed details. Your team stays focused, aligned, and productive, and every decision, task, and insight is captured and acted on instantly. 
 
